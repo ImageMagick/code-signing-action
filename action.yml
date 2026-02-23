@@ -1,0 +1,67 @@
+name: Code Signing
+description: Sign files using Azure Trusted Signing
+inputs:
+  client-id:
+    description: Azure Client ID
+  tenant-id:
+    description: Azure Tenant ID
+  subscription-id:
+    description: Azure Subscription ID
+  directory:
+    description: Directory containing files to sign
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Check if signing should be performed
+      id: should_sign
+      shell: pwsh
+      run: |
+        $shouldSign = $true
+
+        if ("${{inputs.client-id}}" -eq "") {
+          echo "Missing required value: client-id"
+          $shouldSign = $false
+        }
+
+        if ("${{inputs.tenant-id}}" -eq "") {
+          echo "Missing required value: tenant-id"
+          $shouldSign = $false
+        }
+
+        if ("${{inputs.subscription-id}}" -eq "") {
+          echo "Missing required value: subscription-id"
+          $shouldSign = $false
+        }
+
+        echo "should_sign=$shouldSign" >> $env:GITHUB_OUTPUT
+        echo "Should sign: $shouldSign"
+
+    - name: Azure CLI login with federated credential
+      if: steps.should_sign.outputs.should_sign == 'true'
+      uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2.3.0
+      with:
+        client-id: ${{ inputs.client-id }}
+        tenant-id: ${{ inputs.tenant-id }}
+        subscription-id: ${{ inputs.subscription-id }}
+
+    - name: Install sign cli
+      if: steps.should_sign.outputs.should_sign == 'true'
+      shell: cmd
+      run: dotnet tool restore
+      working-directory: ${{ github.action_path }}
+
+    - name: Sign executables and libraries
+      if: steps.should_sign.outputs.should_sign == 'true'
+      shell: pwsh
+      run: |
+        dotnet tool run sign code trusted-signing `
+          --base-directory ${{ inputs.directory }} `
+          --trusted-signing-account ImageMagick `
+          --trusted-signing-certificate-profile ImageMagick2028 `
+          --trusted-signing-endpoint https://wus2.codesigning.azure.net `
+          --azure-credential-type azure-cli `
+          --verbosity information `
+          *.exe *.dll
+      working-directory: ${{ github.action_path }}
