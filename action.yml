@@ -10,6 +10,9 @@ inputs:
   directory:
     description: Directory containing files to sign
     required: true
+  files:
+    description: The files to sign
+    required: true
 
 runs:
   using: composite
@@ -63,5 +66,5 @@ runs:
           --trusted-signing-endpoint https://wus2.codesigning.azure.net `
           --azure-credential-type azure-cli `
           --verbosity information `
-          *.exe *.dll
+          ${{ inputs.files }}
       working-directory: ${{ github.action_path }}
