@@ -59,11 +59,11 @@ runs:
       if: steps.should_sign.outputs.should_sign == 'true'
       shell: pwsh
       run: |
-        dotnet tool run sign code trusted-signing `
+        dotnet tool run sign code artifact-signing `
           --base-directory ${{ inputs.directory }} `
-          --trusted-signing-account ImageMagick `
-          --trusted-signing-certificate-profile ImageMagick2028 `
-          --trusted-signing-endpoint https://wus2.codesigning.azure.net `
+          --artifact-signing-account ImageMagick `
+          --artifact-signing-certificate-profile ImageMagick2028 `
+          --artifact-signing-endpoint https://wus2.codesigning.azure.net `
           --azure-credential-type azure-cli `
           --verbosity information `
           ${{ inputs.files }}
